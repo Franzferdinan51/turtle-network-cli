@@ -32,7 +32,7 @@ function getRandomInt(min, max) {
 
 // Displays random ASCII text or specific ASCII
 function grabASCII(file){
-  const asciiFolder = path.join(__dirname, '../trtl-cli/ascii/')
+  const asciiFolder = path.join(__dirname, '../turtle-network-cli/ascii/')
   //If there was not a file specified / Default command
   if(file === undefined){
     // For outputting every file in a directory
