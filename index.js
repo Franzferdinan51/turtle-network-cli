@@ -114,7 +114,7 @@ const nodes = () => {
         t.cell('URL', item.url)
         t.cell('Port', item.port)
         t.cell('SSL', item.ssl ? "Yes" : "No")
-        t.cell('Synced', item.synced ? "Yes" : "No")
+        t.cell('Synced', item.synced ? "Yes".green : "No".red)
         t.newRow()
       })
       t.sort()
