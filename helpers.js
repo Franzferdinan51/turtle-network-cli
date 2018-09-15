@@ -94,13 +94,14 @@ function getPublicNodeStatuses (url) {
   })
 }
 
+// Get all transactions in the transaction pool
 function getTransactionPool() {
-  daemon.getTransactionPool().then((transactions) => {
+  return daemon.getTransactionPool().then((transactions) => {
     if(transactions != ''){
       var t = new easyTable
       transactions.forEach((item) => {
         t.cell(`Amount`, item.amount_out/100)
-        t.cell(`Fee`, item.fee)
+        t.cell(`Fee`, item.fee/100)
         t.cell(`Size`, item.size)
         t.cell(`Hash`, item.hash)
         t.newRow()
@@ -117,36 +118,47 @@ function getTransactionPool() {
   })
 }
 
+// Given a specific transaction hash, check if it is confirmed or not
 function checkTransactionPool(checkHash) {
   var txArray = []
-  daemon.getTransactionPool().then((transactions) => {// look in the transaction pool, check every transaction for checkHash, then build table
-      //Check every element
-      for(var i = 0; i < transactions.length; i++){
-        if(transactions[i].hash == checkHash){ // At the i'th hash, is it == checkHash
-          // Yes, build the table
-          var t = new easyTable
-          transactions.forEach((item) => {
-            if(item.hash == checkHash) {
-              txArray.push(item)
-              t.cell(`Amount`, txArray[0].amount_out/100)
-              t.cell(`Fee`, txArray[0].fee)
-              t.cell(`Size`, txArray[0].size)
-              t.cell(`Hash`, txArray[0].hash)
-              t.cell(`Status`, `Unconfirmed`.red) // Redundant? Nah
-              t.newRow()
-            }
-          })
-          console.info(`\n` + t.toString())
+  // Did you even put in a valid hash?
+  if(checkRegex(checkHash) == false){ // Cleanse the input
+    console.info(`\nNot a valid hash!`.red) // NO!
+  } else { // YES!
+    daemon.getTransactionPool().then((transactions) => {// look in the transaction pool, check every transaction for checkHash, then build table
+        //Check every element
+        for(var i = 0; i < transactions.length; i++){
+          if(transactions[i].hash == checkHash){ // At the i'th hash, is it == checkHash
+            // Yes, build the table
+            var t = new easyTable
+            transactions.forEach((item) => {
+              if(item.hash == checkHash) {
+                txArray.push(item)
+                t.cell(`Amount`, txArray[0].amount_out/100)
+                t.cell(`Fee`, txArray[0].fee/100)
+                t.cell(`Size`, txArray[0].size)
+                t.cell(`Hash`, txArray[0].hash)
+                t.cell(`Status`, `Unconfirmed`.red)
+                t.newRow()
+              }
+            })
+            console.info(`\n` + t.toString())
+          }
         }
+        if(txArray.length == 0){ // if nothing was pushed to txArray, it's confirmed
+          console.info(`\nTransaction Confirmed!`.green)
+        }
+    }).catch((err) => {
+      if(err.typeError == undefined || err.typeError == `ESOCKETTIMEDOUT`){ // if undefined thrown, the transaction is confirmed
+        console.info(`\nAn Error occured! Please try again!`.red)
       }
-      if(txArray[0].hash != checkHash){ // if the hash is not checkHash, it's confirmed
-        console.info(`\nConfirmed!`.green)
-      }
-  }).catch((err) => {
-    if(err.typeError == undefined){ // if undefined thrown, the transaction is confirmed
-      console.info(`\nConfirmed!`.green)
-    }
-  })
+    })
+  }
+}
+
+function checkRegex(hash) {
+  var hashRegex = /^[a-fA-F0-9]{64}$/i // match letters a-f and 0-9 case-insensitive to length 64
+  return hashRegex.test(hash)
 }
 
 

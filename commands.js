@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-
 const program = require('commander');
 const { prompt } = require('inquirer');
 const version = require('./package.json');
-var colors = require('colors');
+const colors = require('colors');
 
 
 const {
