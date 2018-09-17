@@ -1,12 +1,16 @@
 {
   "name": "trtl",
-  "version": "1.0.54",
+  "version": "1.0.56",
   "description": "Trtl network status CLI",
   "main": "index.js",
   "preferGlobal": true,
   "bin": "./commands.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "trtl": "npm install && npm link"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/turtlecoin/turtle-network-cli"
   },
   "author": "Mrrovot",
   "license": "MIT",

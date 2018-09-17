@@ -5,7 +5,7 @@ Command line interface to check TurtleCoin network status and community activity
 ![Alt Text](https://media.giphy.com/media/8m7LEArtWVfHkuWpPV/giphy.gif)
 
 ### Version
-1.0.54
+1.0.56
 
 ## Usage
 
@@ -17,16 +17,10 @@ Clone this repository
 $ git clone https://github.com/mrrovot/trtl-cli.git
 ```
 
-Install the dependencies
+### Execute run script
 
 ```sh
-$ npm install
-```
-
-### Create Symlink
-
-```sh
-$ npm link
+$ npm run trtl
 ```
 
 ### Commands (work in progress)
