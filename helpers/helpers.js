@@ -3,10 +3,90 @@ const easyTable = require('easy-table');
 const colors = require('colors');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
+const timeago = require("timeago.js");
+
 
 const daemon = new TurtleCoind({
     host: 'public.turtlenode.io'
 })
+
+// Grabs coinmarketcap data and output the price of TurtleCoin formatted
+function getMarket() {
+  const convert = 100000000
+  axios.get('https://api.coinmarketcap.com/v2/ticker/2958/?convert=LTC')
+      .then((response) => {
+          console.info(`\nCurrent USD Price: $${response.data.data.quotes.USD.price}`)
+          console.info(`Current Litoshi Price:    Ł ${(response.data.data.quotes.LTC.price * convert).toFixed(2)}`)
+          // Outputs red text if 24hr change is negative, green if 24hr change is positive
+
+          if (response.data.data.quotes.USD.percent_change_24h < 0) {
+              console.info(`\n24h price change: ${response.data.data.quotes.USD.percent_change_24h + '%'}`.red)
+          } else if (response.data.data.quotes.USD.percent_change_24h > 0) {
+              console.info(`24h price change: ${response.data.data.quotes.USD.percent_change_24h}%`.green)
+          }
+
+          console.info(`24h Volume: $${response.data.data.quotes.USD.volume_24h.toFixed(2)}`)
+          console.info(`Circulating supply: ${numberWithCommas(response.data.data.circulating_supply)}`)
+      })
+      .catch(function(error) {
+          console.info(error);
+      })
+}
+
+// get coinmarketcap data to get circulating supply of TurtleCoin
+function getSupply() {
+  axios.get('https://api.coinmarketcap.com/v2/ticker/2958/')
+      .then(function(response) {
+          console.info(`\nCirculating supply: ${numberWithCommas(response.data.data.circulating_supply)}`)
+      })
+      .catch(function(error) {
+          console.info(error);
+      })
+}
+
+// Grabs network data from TurtleCoind
+function getNetwork() {
+  daemon.getInfo()
+      .then(function(response) {
+          console.info(`\nNetwork block height: ${response.network_height}`);
+          console.info(`The current global hashrate is: ${formatBytes(response.hashrate)}`);
+          console.info(`Mining difficulty: ${numberWithCommas(response.difficulty)}`);
+          console.info(`Client version: ${response.version}`);
+      })
+      .catch(function(error) {
+          console.info(error);
+      })
+}
+
+// Given a quantity of TRTL, will give you how much it is worth in USD and LTC
+function getPrice(qty) {
+  const convert = 100000000
+  axios.get('https://api.coinmarketcap.com/v2/ticker/2958/?convert=LTC')
+      .then((response) => {
+          var trtl_usd = response.data.data.quotes.USD.price
+          var trtl_lit = response.data.data.quotes.LTC.price
+          console.info(`\nCurrent price: $${trtl_usd} or Ł ${(trtl_lit * convert).toFixed(2)}`)
+
+          if (qty) {
+              console.info(`${qty} TRTL is: $${(trtl_usd * qty.replaceAll(",", "")).toFixed(10)}`)
+              console.info(`${qty} TRTL is: $${(trtl_lit * qty.replaceAll(",", "")).toFixed(10)} Litecoin`)
+          } else {
+              console.info('\n' + `You can try "trtl price <amount>" to calculate how much your TRTLs are worth`.red)
+          }
+      })
+      .catch((error) => {
+          console.info(error);
+      })
+}
+
+function getCheckpoints() {
+  axios.get('https://api.github.com/repos/turtlecoin/checkpoints')
+      .then((updateInfo) => {
+        console.log(`\nCheckpoints updated ${timeago().format(updateInfo.data.updated_at)}`)
+        console.log(`Download the latest checkpoint from: http://checkpoints.info/`)
+      });
+}
 
 //helper to get number with commas
 const numberWithCommas = (x) => {
@@ -32,7 +112,7 @@ function getRandomInt(min, max) {
 
 // Displays random ASCII text or specific ASCII
 function grabASCII(file){
-  const asciiFolder = path.join(__dirname, '../turtle-network-cli/ascii/')
+  const asciiFolder = path.join(__dirname, '../ascii/')
   //If there was not a file specified / Default command
   if(file === undefined){
     // For outputting every file in a directory
@@ -54,7 +134,6 @@ String.prototype.replaceAll = function(search, replacement) {
     return target.split(search).join(replacement);
 };
 
-// Given a URL, return a promise containing the status of Public Nodes
 function getPublicNodeStatuses (url) {
   return new Promise(function (resolve, reject) {
     const TurtleCoind = require('turtlecoin-rpc').TurtleCoind
@@ -100,7 +179,7 @@ function getTransactionPool() {
     if(transactions != ''){
       var t = new easyTable
       transactions.forEach((item) => {
-        t.cell(`Amount`, item.amount_out/100)
+        t.cell(`Amount`, numberWithCommas(item.amount_out/100))
         t.cell(`Fee`, item.fee/100)
         t.cell(`Size`, item.size)
         t.cell(`Hash`, item.hash)
@@ -121,8 +200,9 @@ function getTransactionPool() {
 // Given a specific transaction hash, check if it is confirmed or not
 function checkTransactionPool(checkHash) {
   var txArray = []
+  var hashRegex = /^[a-fA-F0-9]{64}$/i // match letters a-f and 0-9 case-insensitive to length 64
   // Did you even put in a valid hash?
-  if(checkRegex(checkHash) == false){ // Cleanse the input
+  if(checkRegex(checkHash, hashRegex) == false){ // Cleanse the input
     console.info(`\nNot a valid hash!`.red) // NO!
   } else { // YES!
     daemon.getTransactionPool().then((transactions) => {// look in the transaction pool, check every transaction for checkHash, then build table
@@ -134,7 +214,7 @@ function checkTransactionPool(checkHash) {
             transactions.forEach((item) => {
               if(item.hash == checkHash) {
                 txArray.push(item)
-                t.cell(`Amount`, txArray[0].amount_out/100)
+                t.cell(`Amount`, numberWithCommas(txArray[0].amount_out/100))
                 t.cell(`Fee`, txArray[0].fee/100)
                 t.cell(`Size`, txArray[0].size)
                 t.cell(`Hash`, txArray[0].hash)
@@ -156,17 +236,21 @@ function checkTransactionPool(checkHash) {
   }
 }
 
-function checkRegex(hash) {
-  var hashRegex = /^[a-fA-F0-9]{64}$/i // match letters a-f and 0-9 case-insensitive to length 64
-  return hashRegex.test(hash)
+function checkRegex(hash, regex) {
+  return regex.test(hash)
 }
 
 
 module.exports = {
-    numberWithCommas,
-    formatBytes,
-    grabASCII,
-    getPublicNodeStatuses,
-    getTransactionPool,
-    checkTransactionPool
+  getMarket,
+  getSupply,
+  getNetwork,
+  getPrice,
+  getCheckpoints,
+  numberWithCommas,
+  formatBytes,
+  grabASCII,
+  getPublicNodeStatuses,
+  getTransactionPool,
+  checkTransactionPool
 };
