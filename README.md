@@ -14,7 +14,7 @@ Command line interface to check TurtleCoin network status and community activity
 Clone this repository
 
 ```sh
-$ git clone https://github.com/mrrovot/trtl-cli.git
+$ git clone https://github.com/turtlecoin/turtle-network-cli.git
 ```
 
 ### Execute run script
