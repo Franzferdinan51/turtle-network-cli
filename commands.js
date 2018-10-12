@@ -13,6 +13,7 @@ const {
     ascii,
     checkpoints,
     nodes,
+    pools,
     transaction
 } = require('./index');
 
@@ -76,10 +77,16 @@ program
     .description('Get all current nodes')
     .action(() => nodes());
 
-    program
-        .command('tx [hash]')
-        .alias('t')
-        .description('Get Transaction information')
-        .action((hash) => transaction(hash));
+program
+    .command('pools')
+    .alias('po')
+    .description('Get all current pools')
+    .action(() => pools());
+
+program
+    .command('tx [hash]')
+    .alias('t')
+    .description('Get Transaction information')
+    .action((hash) => transaction(hash));
 
 program.parse(process.argv);

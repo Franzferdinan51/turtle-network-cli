@@ -1,14 +1,16 @@
 const TurtleCoind = require('turtlecoin-rpc').TurtleCoind
-const easyTable = require('easy-table');
-const colors = require('colors');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const timeago = require("timeago.js");
+const req = require('request')
+const request = require('request-promise-native')
+const easyTable = require('easy-table')
+const colors = require('colors')
+const fs = require('fs')
+const path = require('path')
+const axios = require('axios')
+const timeago = require("timeago.js")
 
 
 const daemon = new TurtleCoind({
-    host: 'public.turtlenode.io'
+    host: 'xaznode.com'
 })
 
 // Grabs coinmarketcap data and output the price of TurtleCoin formatted
@@ -124,7 +126,7 @@ function grabASCII(file){
   } else {
     // If file is specified, print that out
     var ascii = fs.readFileSync(path.join(asciiFolder, file + ".txt"), 'utf8')
-    console.info(ascii)
+    console.info(colors.green(ascii))
   }
 }
 
@@ -176,6 +178,7 @@ function getPublicNodeStatuses (url) {
 // Get all transactions in the transaction pool
 function getTransactionPool() {
   return daemon.getTransactionPool().then((transactions) => {
+    console.info(transactions)
     if(transactions != ''){
       var t = new easyTable
       transactions.forEach((item) => {
@@ -194,6 +197,55 @@ function getTransactionPool() {
     if(err.typeError == undefined){ // As soon as a block arrives, nodes must sync again
       console.info(`\nPublic node may not be synced! Try again.`.red)
     }
+  })
+}
+
+function getPoolsStats () {
+  function getPoolList () {
+    return new Promise((resolve, reject) => {
+      request({
+        uri: 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-pools-json/master/v2/turtlecoin-pools.json',
+        json: true,
+        timeout: 1000
+      }).then((result) => {
+        if (result.pools) {
+          return resolve(result.pools)
+        }
+        return reject(new Error('No pools found'))
+      }).catch((e) => {
+        reject(e)
+      })
+    })
+  }
+
+  function getPoolStats (pool) {
+    return new Promise((resolve, reject) => {
+      request({
+        uri: pool.api + 'stats',
+        json: true,
+        timeout: 1000
+      }).then((result) => {
+        pool.stats = result
+        return resolve(pool)
+      }).catch((e) => {
+        pool.stats = {}
+        return resolve(pool)
+      })
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    getPoolList().then((pools) => {
+      var promises = []
+      for (var i = 0; i < pools.length; i++) {
+        promises.push(getPoolStats(pools[i]))
+      }
+      return Promise.all(promises)
+    }).then((stats) => {
+      return resolve(stats)
+    }).catch((e) => {
+      return reject(e)
+    })
   })
 }
 
@@ -251,6 +303,7 @@ module.exports = {
   formatBytes,
   grabASCII,
   getPublicNodeStatuses,
+  getPoolsStats,
   getTransactionPool,
   checkTransactionPool
 };

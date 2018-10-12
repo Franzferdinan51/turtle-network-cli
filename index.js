@@ -52,6 +52,26 @@ const nodes = () => {
     })
 }
 
+const pools = () => {
+  help.getPoolsStats().then((poolInfo) => {
+    var poolStats = []
+    for(var i = 0; i < poolInfo.length; i++) {
+        poolStats.push(poolInfo[i])
+        console.info(poolInfo[i]) // info pushed to poolStats array
+    }
+
+
+    // Get all the miner #s of forknote pools
+    /*for(var i = 0; i < poolStats.length; i++) {
+      if(poolStats[i].type == "forknote") {
+          console.info(poolStats[i].stats.pool.miners)
+      }
+    }*/
+  }).catch((err) => {
+    console.info(err)
+  })
+}
+
 const transaction = (hash) => {
   if(hash == undefined) {
     help.getTransactionPool()
@@ -69,5 +89,6 @@ module.exports = {
     ascii,
     checkpoints,
     nodes,
+    pools,
     transaction
 }
